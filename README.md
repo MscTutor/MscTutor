@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # MscTutor - Complete Education Platform
 
 A production-grade global education platform for Math, Science & Commerce (Class 1-12) with AI-powered question solving, step-by-step solutions, and interactive learning.
