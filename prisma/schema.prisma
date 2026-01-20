@@ -1,0 +1,315 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Class {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  displayName String
+  order       Int      @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  subjects    Subject[]
+  
+  @@map("classes")
+}
+
+model Subject {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  displayName String
+  slug        String   @unique
+  description String?
+  icon        String?
+  classId     Int
+  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  isDeleted   Boolean  @default(false) // Soft delete
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  chapters    Chapter[]
+  
+  @@map("subjects")
+}
+
+model Chapter {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String
+  description String?
+  order       Int
+  subjectId   Int
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  scienceBranchId Int?
+  scienceBranch ScienceBranch? @relation(fields: [scienceBranchId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  questions   Question[]
+  formulas    Formula[]
+  experiments Experiment[]
+  blocks      ChapterBlock[]
+  bookChapters BookChapter[]
+  examChapters ExamChapter[]
+  projects    Project[]
+  
+  @@unique([subjectId, slug])
+  @@map("chapters")
+}
+
+model Question {
+  id              Int      @id @default(autoincrement())
+  questionText    String   @db.Text
+  questionLatex   String?  @db.Text
+  slug            String   @unique
+  chapterId       Int
+  chapter         Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  examId          Int?
+  exam            Exam?    @relation(fields: [examId], references: [id], onDelete: SetNull)
+  difficulty      String   @default("medium") // easy, medium, hard
+  questionType    String   @default("text") // text, image, diagram
+  imageUrl        String?
+  vectorData      String?  @db.Text // For diagram vectors
+  isDeleted       Boolean  @default(false) // Soft delete
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  solutions       Solution[]
+  variations      QuestionVariation[]
+  relatedQuestions QuestionRelation[] @relation("RelatedQuestions")
+  parentQuestions QuestionRelation[] @relation("ParentQuestions")
+  discussions     Discussion[]
+  examQuestions   ExamQuestion[]
+  
+  @@map("questions")
+}
+
+model QuestionVariation {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String   @db.Text
+  latex      String?  @db.Text
+  createdAt  DateTime @default(now())
+  
+  @@map("question_variations")
+}
+
+model Solution {
+  id          Int      @id @default(autoincrement())
+  questionId  Int
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  stepNumber  Int
+  stepText    String   @db.Text
+  stepLatex   String?  @db.Text
+  explanation String?  @db.Text
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("solutions")
+}
+
+model Formula {
+  id          Int      @id @default(autoincrement())
+  name        String
+  formulaLatex String  @db.Text
+  description String?  @db.Text
+  chapterId   Int
+  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  variables   String?  @db.Text // JSON array of variable names
+  isDeleted   Boolean  @default(false) // Soft delete
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("formulas")
+}
+
+model Experiment {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String   @db.Text
+  procedure   String   @db.Text
+  chapterId   Int
+  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  imageUrl    String?
+  videoUrl    String?  // YouTube embed URL only
+  isDeleted   Boolean  @default(false) // Soft delete
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("experiments")
+}
+
+model QuestionRelation {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  question   Question @relation("RelatedQuestions", fields: [questionId], references: [id], onDelete: Cascade)
+  relatedId  Int
+  related    Question @relation("ParentQuestions", fields: [relatedId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  
+  @@unique([questionId, relatedId])
+  @@map("question_relations")
+}
+
+model Discussion {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  userId     String   // Firebase UID
+  userName   String
+  content    String   @db.Text
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@map("discussions")
+}
+
+model ScienceBranch {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  displayName String
+  slug        String   @unique
+  description String?  @db.Text
+  icon        String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  chapters    Chapter[]
+  
+  @@map("science_branches")
+}
+
+model ChapterBlock {
+  id          Int      @id @default(autoincrement())
+  chapterId   Int
+  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  blockType   String   // introduction, theory, formula, derivation, diagram, experiment, project, solved_question, practice, exam_question, ai_practice, video
+  title       String?
+  content     String   @db.Text
+  contentLatex String? @db.Text
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  metadata    String?  @db.Text // JSON for block-specific data
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("chapter_blocks")
+}
+
+model Book {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  publisher   String
+  bookType    String   // ncert, reference, state-board
+  description String?  @db.Text
+  coverImage  String?
+  isbn        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  chapters    BookChapter[]
+  
+  @@map("books")
+}
+
+model BookChapter {
+  id          Int      @id @default(autoincrement())
+  bookId      Int
+  book        Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapterId   Int
+  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  pageNumber  Int?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  
+  @@unique([bookId, chapterId])
+  @@map("book_chapters")
+}
+
+model Exam {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  examType    String   // jee, neet, upsc, state-board
+  description String?  @db.Text
+  syllabus    String?  @db.Text
+  strategy    String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  chapters    ExamChapter[]
+  questions   ExamQuestion[]
+  
+  @@map("exams")
+}
+
+model ExamChapter {
+  id          Int      @id @default(autoincrement())
+  examId      Int
+  exam        Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  chapterId   Int
+  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  priority    String   @default("medium") // high, medium, low
+  weightage   Float?   // Percentage weightage
+  createdAt   DateTime @default(now())
+  
+  @@unique([examId, chapterId])
+  @@map("exam_chapters")
+}
+
+model ExamQuestion {
+  id          Int      @id @default(autoincrement())
+  examId      Int
+  exam        Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  questionId  Int
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  year        Int?
+  paperType   String?  // main, advanced, prelims, mains
+  marks       Int?
+  createdAt   DateTime @default(now())
+  
+  @@unique([examId, questionId])
+  @@map("exam_questions")
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  chapterId   Int
+  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  title       String
+  description String   @db.Text
+  procedure   String?  @db.Text
+  materials   String?  @db.Text
+  imageUrl    String?
+  videoUrl    String?  // YouTube embed URL only
+  difficulty  String   @default("medium")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("projects")
+}
+
+model Media {
+  id          Int      @id @default(autoincrement())
+  fileName    String
+  fileUrl     String
+  fileType    String   // image, video_embed
+  storageType String   // r2, storj, firebase, temp
+  size        Int       // bytes
+  width       Int?
+  height      Int?
+  uploadedBy  String?  // User ID or 'admin'
+  isPublic    Boolean  @default(true)
+  metadata    String?  @db.Text
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime?
+  
+  @@map("media")
+}

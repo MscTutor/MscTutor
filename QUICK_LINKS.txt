@@ -1,0 +1,45 @@
+MscTutor - Quick Links Reference
+================================
+
+LOCAL DEVELOPMENT (After npm run dev):
+--------------------------------------
+Main Website:        http://localhost:3000
+Home Page:           http://localhost:3000/
+Classes:             http://localhost:3000/classes
+Subjects:            http://localhost:3000/subjects
+Dashboard:           http://localhost:3000/dashboard
+Admin Panel:         http://localhost:3000/admin
+Pricing:             http://localhost:3000/pricing
+Contact:             http://localhost:3000/contact
+Support:             http://localhost:3000/support
+Blog:                http://localhost:3000/blog
+Privacy:             http://localhost:3000/privacy
+Terms:               http://localhost:3000/terms
+
+API Endpoints:
+--------------
+Health Check:        http://localhost:3000/api/health
+OCR Scan:            http://localhost:3000/api/vision/scan
+AI Chat:             http://localhost:3000/api/ai/chat
+
+Database GUI:
+-------------
+Prisma Studio:      http://localhost:5555
+(Run: npx prisma studio)
+
+CONTACT INFO:
+-------------
+Email:              help.msctutor@gmail.com
+Address:            Dola, Madhya Pradesh, India
+Author:             Riyaz Mohammad
+
+PRODUCTION (After Deployment):
+-------------------------------
+Replace localhost:3000 with your domain
+Example: https://msctutor.com
+
+QUICK START:
+------------
+1. cd Desktop\MscTutor
+2. npm run dev
+3. Open: http://localhost:3000

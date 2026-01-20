@@ -1,0 +1,88 @@
+// Firestore Security Rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+    
+    function isModerator() {
+      return isAuthenticated() && (getUserRole() == 'admin' || getUserRole() == 'moderator');
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Users can read their own data
+      allow read: if isOwner(userId);
+      // Users can update their own data (except role and credits)
+      allow update: if isOwner(userId) && 
+        !('role' in request.resource.data.diff(resource.data)) &&
+        !('credits' in request.resource.data.diff(resource.data));
+      // Only admins can create/delete users
+      allow create, delete: if isAdmin();
+      
+      // Credits subcollection
+      match /credits/{creditId} {
+        allow read: if isOwner(userId);
+        allow write: if isAdmin();
+      }
+      
+      // History subcollection
+      match /history/{historyId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Memory subcollection
+      match /memory/{memoryId} {
+        allow read, write: if isOwner(userId);
+        // Auto-delete after 6 months (handled server-side)
+      }
+      
+      // Chat logs subcollection
+      match /chatLogs/{chatId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Scan history subcollection
+      match /scanHistory/{scanId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+    
+    // Credits collection (legacy, use users/{userId}/credits)
+    match /credits/{creditId} {
+      allow read: if isOwner(creditId);
+      allow write: if isAdmin();
+    }
+    
+    // History collection (legacy, use users/{userId}/history)
+    match /history/{historyId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Memory collection (legacy, use users/{userId}/memory)
+    match /memory/{memoryId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Chat logs collection (legacy, use users/{userId}/chatLogs)
+    match /chatLogs/{chatId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

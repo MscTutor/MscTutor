@@ -1,0 +1,32 @@
+NODE.JS DOWNLOAD LINKS
+======================
+
+OFFICIAL WEBSITE (Recommended):
+https://nodejs.org/
+
+DIRECT DOWNLOAD (Windows 64-bit):
+https://nodejs.org/dist/v20.11.0/node-v20.11.0-x64.msi
+
+QUICK STEPS:
+1. Visit: https://nodejs.org/
+2. Click "LTS" button (Long Term Support)
+3. Download will start automatically
+4. Install the .msi file
+5. Restart computer
+6. Verify: node --version
+
+VERIFICATION:
+After installation, open PowerShell and type:
+- node --version
+- npm --version
+
+Both should show version numbers.
+
+AFTER INSTALLATION:
+1. cd Desktop\MscTutor
+2. npm install
+3. npm run dev
+4. Open: http://localhost:3000
+
+CONTACT:
+Email: help.msctutor@gmail.com

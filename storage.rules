@@ -1,0 +1,41 @@
+// Firebase Storage Security Rules
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Admin uploads (permanent content)
+    match /admin/{allPaths=**} {
+      // Only admins can upload/delete
+      allow read: if true; // Public read
+      allow write: if isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // User uploads (temporary, auto-delete after 6 months)
+    match /users/{userId}/{allPaths=**} {
+      // Users can read/write their own files
+      allow read, write: if isOwner(userId);
+      // File size limit: 10MB
+      allow write: if request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // Temporary vision storage (delete within 60 seconds)
+    match /temp/vision/{allPaths=**} {
+      // Anyone can read (temporary)
+      allow read: if true;
+      // Only authenticated users can upload
+      allow write: if isAuthenticated();
+      // Auto-delete handled server-side
+    }
+  }
+}
