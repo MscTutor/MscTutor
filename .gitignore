@@ -27,6 +27,8 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.production
+.env.development
 
 # vercel
 .vercel
@@ -37,3 +39,26 @@ next-env.d.ts
 
 # prisma
 /prisma/migrations
+
+# local development scripts (Windows batch files)
+*.bat
+
+# Firebase service account keys (never commit these!)
+*-firebase-adminsdk-*.json
+firebase-service-account.json
+serviceAccountKey.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Logs
+logs/
+*.log

@@ -1,10 +1,18 @@
 // Cloudflare R2 Storage Adapter (Admin Uploads - Permanent)
+import {
+  DeleteObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3'
+
 export class R2Storage {
   private accountId: string
   private accessKeyId: string
   private secretAccessKey: string
   private bucketName: string
   private publicUrl: string
+  private client: S3Client
 
   constructor() {
     this.accountId = process.env.R2_ACCOUNT_ID || ''
@@ -12,6 +20,17 @@ export class R2Storage {
     this.secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || ''
     this.bucketName = process.env.R2_BUCKET_NAME || ''
     this.publicUrl = process.env.R2_PUBLIC_URL || ''
+
+    this.client = new S3Client({
+      region: 'auto',
+      endpoint: this.accountId
+        ? `https://${this.accountId}.r2.cloudflarestorage.com`
+        : undefined,
+      credentials: {
+        accessKeyId: this.accessKeyId,
+        secretAccessKey: this.secretAccessKey,
+      },
+    })
   }
 
   async uploadFile(
@@ -20,27 +39,50 @@ export class R2Storage {
     contentType: string,
     compress: boolean = true
   ): Promise<string> {
-    // In production, use @aws-sdk/client-s3 for R2
-    // R2 is S3-compatible, so S3 SDK works
-    
-    // For now, return placeholder URL
-    // TODO: Implement actual R2 upload
-    // const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3')
-    // const s3Client = new S3Client({...})
-    // await s3Client.send(new PutObjectCommand({...}))
-    
-    return `${this.publicUrl}/admin/${fileName}`
+    if (!this.accountId || !this.accessKeyId || !this.secretAccessKey || !this.bucketName) {
+      throw new Error('R2 is not configured. Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME.')
+    }
+
+    const key = `admin/${fileName}`
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        Body: file,
+        ContentType: contentType,
+        CacheControl: 'public, max-age=31536000, immutable',
+      })
+    )
+
+    if (this.publicUrl) return `${this.publicUrl}/${key}`
+    return key
   }
 
   async deleteFile(fileName: string): Promise<void> {
-    // TODO: Implement R2 delete
-    // const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3')
-    // await s3Client.send(new DeleteObjectCommand({...}))
+    if (!this.bucketName) return
+    const key = `admin/${fileName}`
+    await this.client.send(
+      new DeleteObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      })
+    )
   }
 
   async fileExists(fileName: string): Promise<boolean> {
-    // TODO: Implement R2 file check
-    return false
+    if (!this.bucketName) return false
+    const key = `admin/${fileName}`
+    try {
+      await this.client.send(
+        new HeadObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+        })
+      )
+      return true
+    } catch {
+      return false
+    }
   }
 }
 
